@@ -37,6 +37,28 @@ h1{font-family:"Gowun Batang",serif;font-weight:700;font-size:clamp(30px,5vw,46p
 .dek{margin:10px 0 0;max-width:74ch;color:var(--ink-2);font-size:15px;font-weight:300}
 .dek strong{color:var(--ink);font-weight:500}
 
+.hero{display:grid;grid-template-columns:minmax(280px,430px) minmax(0,1fr);gap:32px;align-items:center;margin-top:18px}
+@media (max-width:860px){.hero{grid-template-columns:1fr;gap:18px}.kmap{max-width:430px;margin:0 auto!important}}
+.kmap{margin:0;background:#0A1113;border:1px solid #1E2A27;width:100%}
+.kmap svg{display:block;width:100%;height:auto}
+.k-grat{stroke:#16211F;stroke-width:1;fill:none}
+.k-gl{font:400 8px "IBM Plex Mono",monospace;fill:#34433F}
+.k-nk{fill:#162120;stroke:#263430;stroke-width:.8}
+.k-sk{fill:#EEF2E9;stroke:#FFFFFF;stroke-width:.6;filter:drop-shadow(0 0 16px rgba(170,230,210,.38))}
+.k-sea{font:500 9px "IBM Plex Mono",monospace;letter-spacing:.3em;fill:#33443F}
+.k-cap{font:500 10px "IBM Plex Mono",monospace;letter-spacing:.16em;fill:#7E8E86}
+.k-rect{fill:rgba(184,64,46,.06);stroke:#B8402E;stroke-width:1;stroke-dasharray:3 3}
+.k-lead{stroke:#EC7758;stroke-width:.8;fill:none}
+.k-lbl{font:600 11.5px "IBM Plex Sans KR",sans-serif;fill:#E7EDE6}
+.k-sub{font:400 9.5px "IBM Plex Mono",monospace;fill:#8FA097}
+.kdot{fill:#2E6E63;stroke:#F4F6F1;stroke-width:.9;cursor:pointer}
+.kdot.on{fill:#B8402E;stroke:#fff;stroke-width:1.4}
+.k-campus{fill:#B8402E;stroke:#F4F6F1;stroke-width:.8}
+.hero-txt h1{margin-top:0}
+.hero .summary{grid-template-columns:repeat(2,1fr)}
+.hero .summary>div:nth-child(2n){border-right:0}
+.hero .summary>div:last-child{grid-column:1/-1}
+.hero-note{margin:12px 0 0;font-size:12px;color:var(--muted)}
 .summary{display:grid;grid-template-columns:repeat(5,1fr);border:1px solid var(--line);margin-top:20px;background:var(--surface)}
 @media (max-width:900px){.summary{grid-template-columns:repeat(2,1fr)}}
 .summary>div{padding:14px 16px;border-right:1px solid var(--line);border-bottom:1px solid var(--line-soft)}
@@ -205,9 +227,17 @@ td a{color:var(--jade);text-decoration:none}
     <div class="eyebrow"><span>경동대학교 메트로폴캠퍼스</span><span>2026-2학기</span><span>데이터 시각화 · <b>GitHub Pages 인물지도</b></span></div>
     <button class="theme" id="theme">LIGHT / DARK</button>
   </div>
-  <h1>우리 반 인물지도</h1>
-  <p class="dek" id="dek"></p>
-  <div class="summary" id="summary"></div>
+  <div class="hero">
+    <figure class="kmap">
+      <svg id="kmap" viewBox="0 0 370 640" role="img" aria-label="한반도 지도 위 수강생 거주지"></svg>
+    </figure>
+    <div class="hero-txt">
+      <h1>우리 반 인물지도</h1>
+      <p class="dek" id="dek"></p>
+      <div class="summary" id="summary"></div>
+      <p class="hero-note">한반도 지도에서 점을 누르면 아래 수도권 확대 지도와 프로필로 이어집니다.</p>
+    </div>
+  </div>
 
   <div class="tabs-bar">
     <div class="tabs" role="tablist" id="tabs"></div>
@@ -528,6 +558,7 @@ function select(i){
   document.querySelectorAll('.lead').forEach(l=>l.classList.toggle('on',+l.dataset.i===i));
   document.querySelectorAll('.box .m').forEach(m=>m.classList.toggle('on',+m.dataset.i===i));
   document.querySelectorAll('.box').forEach(b=>b.classList.toggle('on',!!b.querySelector('.m.on')));
+  document.querySelectorAll('.kdot').forEach(d=>{const on=+d.dataset.i===i;d.classList.toggle('on',on);d.setAttribute('r',on?4.6:2.8);if(on)d.parentNode.appendChild(d)});
   document.querySelectorAll('.d-row,.tg-btn,#rows tr').forEach(el=>el.classList.toggle('on',+el.dataset.i===i));
   applyHighlight();
 
@@ -703,6 +734,44 @@ document.getElementById('theme').onclick=()=>{
   const d=r.dataset.theme||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');
   r.dataset.theme=d==='dark'?'light':'dark';
 };
+
+// Hero: Korean peninsula (South bright, the rest dark)
+const KOREA={nk:"M221.6,290.6L219.9,291.5L217.0,296.5L214.5,303.0L211.9,306.4L208.8,308.3L205.8,309.5L199.3,310.0L193.7,309.6L191.8,308.8L184.0,309.3L181.8,309.7L170.5,309.3L164.6,309.8L160.8,310.9L157.1,313.5L153.7,317.5L150.8,321.6L145.0,329.2L140.8,333.0L140.8,338.3L140.8,340.0L139.2,341.1L138.7,340.6L136.3,340.2L126.8,335.3L119.0,338.3L116.9,342.2L114.9,343.4L111.6,335.8L106.5,335.6L98.4,328.8L94.8,330.2L93.9,332.9L89.5,339.1L83.2,344.1L81.2,344.9L79.0,344.6L79.3,343.1L76.8,337.4L66.9,335.1L63.3,332.7L61.4,332.1L71.1,325.7L73.7,324.6L71.8,323.1L69.8,322.4L61.8,323.3L57.7,321.2L51.6,322.0L47.5,320.3L56.2,314.0L56.5,310.3L56.3,307.5L60.8,299.1L65.2,294.6L76.6,288.1L81.7,287.2L85.3,287.5L88.2,286.9L85.1,284.4L82.0,283.2L76.1,283.4L69.9,279.7L69.4,275.7L81.3,250.7L81.5,248.4L79.6,242.4L79.1,236.4L70.5,233.0L66.7,232.6L55.8,225.9L51.4,222.5L49.7,223.5L49.3,228.8L47.8,230.1L44.9,231.1L43.4,225.0L41.0,220.6L33.9,216.0L31.1,213.6L32.5,208.2L31.8,207.8L33.0,201.8L37.4,197.1L48.3,188.8L51.2,185.0L56.8,180.4L59.2,180.5L61.9,180.1L62.6,178.1L63.3,176.6L65.5,175.2L70.8,172.6L76.9,169.4L81.7,168.4L87.6,163.4L90.0,161.2L92.6,161.2L93.1,160.2L94.6,157.7L96.5,156.0L99.1,155.7L103.3,154.5L108.8,153.7L112.5,149.6L113.7,146.6L116.1,143.3L121.3,139.8L124.8,134.5L128.8,128.7L130.7,126.9L132.4,126.6L133.6,124.4L134.8,118.2L136.7,112.4L137.7,109.6L142.3,106.5L143.5,105.0L144.5,104.5L146.5,104.9L149.3,103.1L152.0,101.1L154.4,101.9L156.9,103.4L159.5,106.8L160.7,109.4L162.7,111.6L163.1,114.7L165.1,116.1L169.3,116.8L176.5,119.0L181.1,119.1L183.6,120.7L189.1,121.6L200.0,120.3L204.4,121.0L206.3,123.0L209.2,124.7L210.9,124.8L213.3,122.0L216.0,117.6L217.7,114.3L217.5,111.6L216.0,108.6L212.4,106.0L210.0,101.9L207.8,97.6L206.5,96.1L205.4,94.1L205.3,90.9L205.9,88.7L211.4,87.3L218.4,86.5L224.0,87.4L233.5,86.8L239.3,85.5L243.6,85.7L247.5,85.7L249.3,83.8L254.8,79.5L257.5,77.9L260.4,74.9L260.9,71.8L261.4,69.3L263.1,66.6L266.0,63.2L268.4,61.7L271.1,61.9L274.0,63.4L275.9,64.9L277.9,64.5L279.6,61.9L280.8,61.3L284.1,61.1L285.1,59.5L286.5,51.8L287.6,45.6L288.0,41.5L290.9,34.4L291.9,30.1L293.6,28.1L295.6,28.2L297.3,29.5L299.4,30.2L302.3,29.6L304.3,30.6L305.5,32.9L309.8,34.5L310.1,35.6L310.1,43.3L312.3,46.9L315.4,50.1L319.6,53.1L322.0,53.7L323.4,55.8L324.6,59.5L327.6,63.0L329.2,65.6L329.5,68.3L330.9,69.9L328.5,71.6L325.3,70.5L320.0,69.9L313.3,75.2L309.6,77.0L306.9,82.2L301.6,85.3L298.7,88.5L295.0,94.2L292.6,99.7L287.0,105.3L283.6,112.3L283.4,118.3L287.0,124.5L287.3,129.8L284.8,140.6L286.3,152.1L284.6,156.6L267.2,164.5L262.8,168.3L256.3,178.5L248.5,182.3L243.7,186.4L237.1,188.9L232.7,196.1L228.1,200.2L222.5,202.7L218.2,205.8L208.8,206.0L202.2,208.2L197.6,214.3L183.5,221.1L181.4,226.2L182.5,234.3L182.5,240.3L181.3,245.4L178.2,243.9L176.5,245.6L174.6,250.2L175.3,255.5L180.1,257.3L184.0,259.4L189.6,260.5L193.7,263.0L202.5,274.1L209.7,279.0L211.6,280.8L215.6,283.3L219.4,287.2L221.6,290.6ZM57.5,235.8L54.8,237.6L54.8,234.5L56.8,231.9L58.9,231.5L57.5,235.8Z",sk:"M139.2,341.1L140.8,340.0L140.8,338.3L140.8,333.0L145.0,329.2L150.8,321.6L153.7,317.5L157.1,313.5L160.8,310.9L164.6,309.8L170.5,309.3L181.8,309.7L184.0,309.3L191.8,308.8L193.7,309.6L199.3,310.0L205.8,309.5L208.8,308.3L211.9,306.4L214.5,303.0L217.0,296.5L219.9,291.5L221.6,290.6L233.2,317.5L244.1,334.8L253.6,347.4L267.1,371.5L271.0,384.5L271.3,392.5L273.5,403.5L271.6,409.8L272.2,419.8L271.3,424.9L269.8,428.6L269.6,435.9L270.1,439.8L270.3,444.9L271.3,446.8L272.8,447.6L275.2,445.7L278.3,445.0L277.8,451.1L274.0,466.7L271.0,478.1L266.7,488.0L261.3,497.1L254.8,500.6L250.2,501.9L241.5,502.4L234.2,500.8L228.1,501.9L225.5,503.8L223.6,507.1L225.0,512.1L224.8,515.8L222.1,515.5L216.8,513.3L211.1,513.1L208.3,511.9L205.6,506.6L202.7,506.8L197.8,510.1L190.3,510.7L187.7,512.5L186.9,514.7L187.9,517.4L191.6,521.0L190.5,524.8L186.5,526.6L183.3,522.1L181.3,517.6L179.1,517.4L175.6,518.6L175.0,523.4L176.7,526.7L179.2,530.5L175.5,534.9L174.6,538.0L171.9,540.2L164.8,535.3L165.8,531.7L168.8,528.3L169.3,524.8L168.3,522.7L157.9,531.6L151.6,541.6L148.4,540.9L146.9,538.3L145.0,537.3L138.2,543.8L136.8,548.9L134.5,549.1L133.3,546.9L133.3,542.3L132.1,538.4L125.1,532.6L121.9,527.6L123.6,524.8L129.3,526.3L134.1,526.1L133.1,523.7L131.6,522.6L134.8,521.3L137.3,518.5L135.1,517.8L131.9,519.3L129.2,518.6L128.2,512.1L124.8,505.3L123.1,498.7L126.3,495.0L128.0,489.1L131.1,480.7L132.6,477.9L136.8,475.9L138.4,473.7L136.0,472.6L132.2,471.6L132.4,469.1L135.0,467.9L137.7,465.2L143.1,461.8L144.8,455.7L143.3,454.1L139.9,452.7L140.8,449.6L142.1,447.2L141.6,445.7L137.5,441.7L134.8,438.0L135.6,433.8L135.0,427.6L135.3,422.3L135.1,419.3L133.3,412.9L132.4,406.3L129.7,407.4L127.6,408.9L120.2,406.6L117.8,406.5L116.9,401.6L119.5,395.7L125.9,390.5L129.5,389.9L132.2,387.6L136.7,386.9L141.8,390.4L146.4,391.1L148.9,397.3L150.5,398.5L150.8,396.2L154.5,393.6L155.4,391.6L154.7,390.5L150.5,389.5L146.5,381.9L146.0,378.5L144.5,376.4L146.7,370.3L142.3,363.3L140.1,361.1L140.4,355.0L138.0,350.9L136.7,348.7L136.0,345.0L136.7,343.3L138.7,342.7L139.2,341.1ZM239.0,520.1L234.4,523.8L228.4,518.8L227.1,516.1L231.5,512.1L235.4,507.5L237.9,507.2L239.0,520.1ZM207.0,519.7L206.5,525.5L203.1,525.8L201.2,522.1L199.0,523.8L197.9,523.9L196.2,519.2L195.9,515.5L199.8,512.8L202.2,514.4L205.6,515.3L207.0,519.7ZM120.3,545.8L117.3,546.7L115.6,544.7L114.4,544.0L115.1,541.3L120.0,536.0L121.0,534.2L125.6,535.3L127.3,538.1L125.1,542.5L120.3,545.8ZM133.9,343.8L133.6,351.7L131.1,351.3L129.3,350.6L128.5,349.0L126.8,341.6L128.7,338.6L132.6,341.0L133.9,343.8ZM144.8,547.4L145.7,550.2L141.9,549.7L139.9,546.9L140.1,544.5L142.5,544.2L144.8,547.4ZM194.4,531.1L193.9,533.0L191.5,530.2L193.9,527.0L194.4,531.1ZM129.0,418.4L128.3,422.4L125.3,419.8L124.4,411.2L127.6,413.7L129.0,418.4ZM117.4,524.1L116.8,525.6L114.7,525.2L112.7,521.0L111.8,517.8L109.6,515.9L113.0,513.1L117.3,518.2L117.4,524.1ZM341.8,359.2L339.6,361.1L337.0,359.2L336.7,357.4L338.0,355.8L341.1,354.8L342.6,356.2L341.8,359.2ZM124.8,614.5L122.5,615.9L120.7,615.1L120.2,614.4L117.8,611.0L117.1,609.2L118.8,605.9L125.3,600.4L142.1,595.1L145.2,594.9L151.8,597.0L153.3,601.4L152.2,605.1L150.6,607.6L142.8,611.7L136.8,613.7L124.8,614.5Z"};
+const LL={"박종석":[127.095,37.745],"박준영":[127.045,37.740],"강민서":[127.065,37.665],"박정빈":[128.607,34.890],"김나림":[127.060,37.903],"김보라":[127.070,37.752],"김승기":[127.140,37.607],"문민희":[127.216,37.636],"민제희":[127.730,37.881],"윤수아":[127.150,37.495],"이지민":[127.190,37.567],"정유림":[127.055,37.572],"최윤영":[127.030,37.648],"최윤지":[127.200,37.895],"신단하":[127.070,37.735]};
+const KC=60*Math.cos(38*Math.PI/180);
+const kp=(lon,lat)=>[(lon-123.9)*KC+10,(43.3-lat)*60+10];
+(function(){
+  const [kx,ky]=kp(127.083,37.811);
+  const pxkm=60/111;
+  const rx=kx-32*pxkm, ry=ky-24*pxkm, rw=118*pxkm, rh=78*pxkm;
+  const farP=P.find(p=>p.far), [fx,fy]=kp(...LL[farP.name]);
+  let g='';
+  for(let lat=34;lat<=42;lat+=2){const y=kp(124,lat)[1];g+=`<line class="k-grat" x1="0" y1="${y}" x2="370" y2="${y}"/><text class="k-gl" x="4" y="${y-3}">${lat}°N</text>`}
+  for(let lon=124;lon<=130;lon+=2){const x=kp(lon,38)[0];g+=`<line class="k-grat" x1="${x}" y1="0" x2="${x}" y2="640"/><text class="k-gl" x="${x+3}" y="634">${lon}°E</text>`}
+  document.getElementById('kmap').innerHTML=`
+    ${g}
+    <path class="k-nk" d="${KOREA.nk}"/>
+    <path class="k-sk" d="${KOREA.sk}"/>
+    <text class="k-cap" x="14" y="24">한반도 · KOREAN PENINSULA</text>
+    <text class="k-sea" x="38" y="450">서해</text>
+    <text class="k-sea" x="298" y="290">동해</text>
+    <rect class="k-rect" x="${rx}" y="${ry}" width="${rw}" height="${rh}"/>
+    <path class="k-lead" d="M${rx},${ry+rh/2} L104,${ry+rh/2}"/>
+    <text class="k-lbl" x="100" y="${ry+rh/2-2}" text-anchor="end">수도권·춘천 ${P.filter(p=>!p.far).length}명</text>
+    <text class="k-sub" x="100" y="${ry+rh/2+11}" text-anchor="end">아래에서 확대 ↓</text>
+    <path class="k-lead" d="M${fx},${fy} L262,548"/>
+    <text class="k-lbl" x="266" y="550">${esc(farP.city.replace('시',''))} · ${esc(farP.name)}</text>
+    <text class="k-sub" x="266" y="563">학교에서 ${farP.km}km</text>
+    <g transform="translate(${kx},${ky})"><rect class="k-campus" x="-3.4" y="-3.4" width="6.8" height="6.8" transform="rotate(45)"/></g>
+    <g id="kdots">${P.map(p=>{const [x,y]=kp(...LL[p.name]);return `<circle class="kdot" data-i="${p.i}" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="2.8"/>`}).join('')}</g>
+    <g transform="translate(14,44)"><rect class="k-campus" x="-3" y="-3" width="6" height="6" transform="translate(4,-3) rotate(45)"/><text class="k-sub" x="14" y="0">캠퍼스</text><circle class="kdot" cx="62" cy="-3" r="2.8" style="cursor:default"/><text class="k-sub" x="70" y="0">수강생 ${P.length}명</text></g>`;
+  document.querySelectorAll('#kdots .kdot').forEach(d=>{
+    const p=P[+d.dataset.i];
+    d.onclick=()=>{select(p.i);document.querySelector('.stage').scrollIntoView({behavior:'smooth',block:'start'})};
+    d.onmousemove=e=>{tip.textContent=`${p.name} · ${p.city} (${p.km}km)`;tip.style.left=e.clientX+12+'px';tip.style.top=e.clientY+12+'px';tip.style.opacity=1};
+    d.onmouseleave=()=>tip.style.opacity=0;
+  });
+})();
 
 drawBoxes();
 renderRows();
