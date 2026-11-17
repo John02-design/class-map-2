@@ -54,6 +54,13 @@ h1{font-family:"Gowun Batang",serif;font-weight:700;font-size:clamp(30px,5vw,46p
 .e-views button{appearance:none;font:500 12.5px "IBM Plex Sans KR",sans-serif;color:#E8EAED;padding:6px 13px;border-radius:18px;cursor:pointer}
 .e-views button:hover{background:rgba(60,64,67,.95)}
 .e-views button.on{background:#8AB4F8;color:#202124;border-color:#8AB4F8}
+.e-views .e-tog{margin-left:0}
+.e-views #eSpin{margin-left:10px}
+.e-views .e-tog.on{background:#FBBC04;border-color:#FBBC04;color:#202124}
+.e-views [hidden]{display:none}
+#globe.editing .pin{cursor:grab}
+#globe.editing .pin span{opacity:1}
+#globe.editing .pin i{outline:2px dashed #FBBC04;outline-offset:2px}
 .e-ctl{position:absolute;right:14px;bottom:44px;z-index:3;display:flex;flex-direction:column;gap:8px}
 .e-ctl button{appearance:none;width:38px;height:38px;border-radius:50%;color:#E8EAED;font-size:19px;line-height:1;cursor:pointer;display:grid;place-items:center}
 .e-ctl button:hover{background:rgba(60,64,67,.95)}
@@ -256,11 +263,18 @@ td a{color:var(--jade);text-decoration:none}
       <button class="e-pill on" data-v="korea">한반도</button>
       <button class="e-pill" data-v="metro">수도권</button>
       <button class="e-pill" data-v="tilt">3D 기울이기</button>
+      <button class="e-pill e-tog" id="eSpin">자동 회전</button>
+      <button class="e-pill e-tog" id="eEdit">핀 편집</button>
+      <button class="e-pill e-tog" id="eReset" hidden>위치 초기화</button>
     </div>
-    <div class="e-hint e-pill">드래그로 회전 · Ctrl+스크롤로 확대 · 핀을 누르면 이동</div>
+    <div class="e-hint e-pill" id="eHint">드래그로 돌리기 · 스크롤로 확대 · 우클릭 드래그로 회전/기울이기</div>
     <div class="e-card e-pill" id="eCard" hidden></div>
     <div class="e-ctl">
-      <button class="e-pill e-n" id="eNorth" title="북쪽을 위로">N</button>
+      <button class="e-pill" id="eRotL" title="왼쪽으로 회전">↺</button>
+      <button class="e-pill" id="eRotR" title="오른쪽으로 회전">↻</button>
+      <button class="e-pill" id="eTiltU" title="더 기울이기">⌃</button>
+      <button class="e-pill" id="eTiltD" title="덜 기울이기">⌄</button>
+      <button class="e-pill e-n" id="eNorth" title="북쪽을 위로 · 기울기 초기화">N</button>
       <button class="e-pill" id="eIn" title="확대">+</button>
       <button class="e-pill" id="eOut" title="축소">−</button>
     </div>
@@ -804,7 +818,7 @@ let booted=false;
       ],
       sky:{'atmosphere-blend':['interpolate',['linear'],['zoom'],0,1,5,1,7.5,0]}
     },
-    center:[105,18],zoom:1.3,maxPitch:75,attributionControl:false,cooperativeGestures:true
+    center:[105,18],zoom:1.3,maxPitch:75,attributionControl:false
   });
   window.earthMap=map;
 
@@ -812,12 +826,60 @@ let booted=false;
   const mk=(cls,label,ll,onClick)=>{
     const el=document.createElement('div');el.className='pin '+cls;el.innerHTML='<i></i><span></span>';el.lastChild.textContent=label;
     if(onClick)el.addEventListener('click',e=>{e.stopPropagation();onClick()});
-    new maplibregl.Marker({element:el,anchor:'left',offset:[-8,0]}).setLngLat(ll).addTo(map);return el};
+    el._m=new maplibregl.Marker({element:el,anchor:'left',offset:[-8,0]}).setLngLat(ll).addTo(map);return el};
   mk('campus','경동대 메트로폴캠퍼스',CAMPUS,()=>fly('metro'));
-  P.forEach(p=>{pins[p.i]=mk('',p.name,LL[p.name],()=>select(p.i))});
+  P.forEach(p=>{
+    const el=pins[p.i]=mk('',p.name,LL[p.name],()=>{if(!el._dragged)select(p.i);el._dragged=false});
+    el._m.on('dragend',()=>{
+      const ll=el._m.getLngLat();LL[p.name]=[+ll.lng.toFixed(5),+ll.lat.toFixed(5)];el._dragged=true;
+      try{localStorage.setItem('classmap-pins-v1',JSON.stringify(LL))}catch(e){}
+      const s=map.getSource('arcs');if(s)s.setData({type:'FeatureCollection',features:P.map(q=>({type:'Feature',properties:{i:q.i},geometry:{type:'LineString',coordinates:[CAMPUS,LL[q.name]]}}))});
+      setTimeout(()=>{el._dragged=false},50);
+    });
+  });
 
-  const vbtn=document.querySelectorAll('#eViews button');
+  // --- 조작: 회전 · 기울이기 · 자동 회전 · 핀 편집 ---
+  const $=id=>document.getElementById(id);
+  $('eRotL').onclick=()=>{stopSpin();map.easeTo({bearing:map.getBearing()-30,duration:500})};
+  $('eRotR').onclick=()=>{stopSpin();map.easeTo({bearing:map.getBearing()+30,duration:500})};
+  $('eTiltU').onclick=()=>{stopSpin();map.easeTo({pitch:Math.min(75,map.getPitch()+15),duration:500})};
+  $('eTiltD').onclick=()=>{stopSpin();map.easeTo({pitch:Math.max(0,map.getPitch()-15),duration:500})};
+  let spinning=false,spinRaf=0;
+  function spinStep(){
+    if(!spinning)return;
+    const c=map.getCenter();map.setCenter([c.lng+0.12,c.lat]);
+    spinRaf=requestAnimationFrame(spinStep);
+  }
+  function stopSpin(){spinning=false;cancelAnimationFrame(spinRaf);$('eSpin').classList.remove('on')}
+  $('eSpin').onclick=()=>{
+    if(spinning){stopSpin();return}
+    map.stop();spinning=true;$('eSpin').classList.add('on');
+    if(map.getZoom()>3.2){map.easeTo({zoom:2.2,pitch:0,duration:1200});setTimeout(spinStep,1250)}else spinStep();
+  };
+  ['mousedown','touchstart','wheel'].forEach(ev=>box.addEventListener(ev,()=>{if(spinning)stopSpin()},{passive:true}));
+
+  const SAVE_KEY='classmap-pins-v1';
+  const ORIG=JSON.parse(JSON.stringify(LL));
+  try{const sv=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');if(sv)Object.keys(sv).forEach(k=>{if(LL[k])LL[k]=sv[k]})}catch(e){}
+  const arcData=()=>({type:'FeatureCollection',features:P.map(p=>({type:'Feature',properties:{i:p.i},geometry:{type:'LineString',coordinates:[CAMPUS,LL[p.name]]}}))});
+  const refreshArcs=()=>{const s=map.getSource('arcs');if(s)s.setData(arcData())};
+  P.forEach(p=>pins[p.i]._m.setLngLat(LL[p.name]));
+  map.once('load',refreshArcs);
+  let editing=false;
+  $('eEdit').onclick=()=>{
+    editing=!editing;stopSpin();
+    $('eEdit').classList.toggle('on',editing);$('eReset').hidden=!editing;box.classList.toggle('editing',editing);
+    $('eHint').textContent=editing?'핀을 끌어서 위치를 옮기세요 · 이 브라우저에 자동 저장됩니다':'드래그로 돌리기 · 스크롤로 확대 · 우클릭 드래그로 회전/기울이기';
+    pins.forEach(el=>el&&el._m.setDraggable(editing));
+  };
+  $('eReset').onclick=()=>{
+    try{localStorage.removeItem(SAVE_KEY)}catch(e){}
+    P.forEach(p=>{LL[p.name]=ORIG[p.name].slice();pins[p.i]._m.setLngLat(LL[p.name])});refreshArcs();
+  };
+
+  const vbtn=document.querySelectorAll('#eViews button[data-v]');
   function fly(v){
+    stopSpin();
     vbtn.forEach(b=>b.classList.toggle('on',b.dataset.v===v));
     map.flyTo({...VIEWS[v],duration:v==='earth'?3500:2800,essential:true});
   }
