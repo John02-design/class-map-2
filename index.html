@@ -86,6 +86,11 @@ h1{font-family:"Gowun Batang",serif;font-weight:700;font-size:clamp(30px,5vw,46p
 .pin.on i{background:#EA4335;transform:scale(1.35)}
 .pin.campus i{border-radius:2px;background:#EA4335;transform:rotate(45deg);width:12px;height:12px}
 .pin.campus span{color:#FAD2CF}
+.plc{display:block;pointer-events:none;white-space:nowrap;opacity:0;transition:opacity .25s;font-family:"IBM Plex Sans KR",sans-serif;text-shadow:0 0 3px rgba(0,0,0,.95),0 1px 2px #000,0 0 10px rgba(0,0,0,.7)}
+.plc.major{font-size:13px;font-weight:600;color:#fff;letter-spacing:.04em}
+.plc.minor{font-size:11px;font-weight:500;color:#DADCE0;letter-spacing:.06em}
+.plc.sea{font-size:13px;font-weight:400;font-style:italic;color:#A8C7FA;letter-spacing:.5em}
+#globe.z-major .plc.major,#globe.z-minor .plc.minor,#globe.z-sea .plc.sea{opacity:.92}
 .e-fallback{position:absolute;inset:0;display:grid;place-items:center;color:#9AA0A6;font-size:13px;text-align:center;padding:20px}
 .summary{display:grid;grid-template-columns:repeat(5,1fr);border:1px solid var(--line);margin-top:20px;background:var(--surface)}
 @media (max-width:900px){.summary{grid-template-columns:repeat(2,1fr)}}
@@ -278,7 +283,7 @@ td a{color:var(--jade);text-decoration:none}
       <button class="e-pill" id="eIn" title="확대">+</button>
       <button class="e-pill" id="eOut" title="축소">−</button>
     </div>
-    <div class="e-status"><span id="eCoord"></span><span id="eAlt"></span><span>이미지 © Esri, Maxar, Earthstar Geographics</span></div>
+    <div class="e-status"><span id="eCoord"></span><span id="eAlt"></span><span>이미지: Sentinel-2 cloudless 2024 by EOX (Copernicus) · Esri, Maxar</span></div>
   </section>
   <h1>우리 반 인물지도</h1>
   <p class="dek" id="dek"></p>
@@ -802,15 +807,17 @@ let booted=false;
     container:box,
     style:{version:8,projection:{type:'globe'},
       sources:{
-        sat:{type:'raster',tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],tileSize:256,maxzoom:17},
+        sat:{type:'raster',tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],tileSize:256,maxzoom:18},
+        s2:{type:'raster',tiles:['https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-2024_3857/default/g/{z}/{y}/{x}.jpg'],tileSize:256,maxzoom:13},
         dim:{type:'geojson',data:{type:'Feature',geometry:{type:'Polygon',coordinates:[[[-180,-85],[180,-85],[180,85],[-180,85],[-180,-85]],...skRings]}}},
         sk:{type:'geojson',data:{type:'Feature',geometry:{type:'MultiLineString',coordinates:skRings}}},
         arcs:{type:'geojson',data:{type:'FeatureCollection',features:P.map(p=>({type:'Feature',properties:{i:p.i},geometry:{type:'LineString',coordinates:[CAMPUS,LL[p.name]]}}))}}
       },
       layers:[
         {id:'space',type:'background',paint:{'background-color':'#05080c'}},
-        {id:'sat',type:'raster',source:'sat'},
-        {id:'dim',type:'fill',source:'dim',paint:{'fill-color':'#000','fill-opacity':['interpolate',['linear'],['zoom'],3,.5,9,.38,12,.15]}},
+        {id:'sat',type:'raster',source:'sat',minzoom:8.5},
+        {id:'s2',type:'raster',source:'s2',maxzoom:11.5,paint:{'raster-opacity':['interpolate',['linear'],['zoom'],9.5,1,11.2,0],'raster-saturation':.12,'raster-contrast':.06,'raster-fade-duration':200}},
+        {id:'dim',type:'fill',source:'dim',paint:{'fill-color':'#000','fill-opacity':['interpolate',['linear'],['zoom'],3,.34,8,.24,11,.1,13,0]}},
         {id:'sk-glow',type:'line',source:'sk',paint:{'line-color':'#BFE9FF','line-width':7,'line-blur':7,'line-opacity':['interpolate',['linear'],['zoom'],3,.7,10,.25]}},
         {id:'sk-line',type:'line',source:'sk',paint:{'line-color':'#fff','line-width':1.1,'line-opacity':.85}},
         {id:'arcs',type:'line',source:'arcs',paint:{'line-color':'#fff','line-width':1,'line-opacity':.45,'line-dasharray':[2,2]}},
@@ -827,6 +834,22 @@ let booted=false;
     const el=document.createElement('div');el.className='pin '+cls;el.innerHTML='<i></i><span></span>';el.lastChild.textContent=label;
     if(onClick)el.addEventListener('click',e=>{e.stopPropagation();onClick()});
     el._m=new maplibregl.Marker({element:el,anchor:'left',offset:[-8,0]}).setLngLat(ll).addTo(map);return el};
+  // 한글 지명 (사진 위에 직접 얹는 라벨)
+  const PLACES=[
+    ['major','서울',126.978,37.566],['major','부산',129.075,35.180],['major','대구',128.601,35.871],['major','대전',127.385,36.350],
+    ['major','광주',126.853,35.160],['major','인천',126.705,37.456],['major','울산',129.311,35.539],['major','제주',126.531,33.499],
+    ['major','강릉',128.876,37.752],['major','평양',125.754,39.039],
+    ['minor','의정부',127.034,37.738],['minor','양주',127.046,37.800],['minor','동두천',127.060,37.915],['minor','포천',127.200,37.908],
+    ['minor','구리',127.130,37.594],['minor','남양주',127.230,37.650],['minor','하남',127.215,37.539],['minor','춘천',127.730,37.895],
+    ['minor','수원',127.029,37.264],['minor','고양',126.832,37.658],['minor','파주',126.780,37.760],['minor','가평',127.510,37.831],
+    ['minor','성남',127.127,37.420],['minor','거제',128.621,34.905],
+    ['sea','동해',131.0,38.2],['sea','서해',124.4,36.2],['sea','남해',127.9,33.95]
+  ];
+  PLACES.forEach(([cls,name,lon,lat])=>{
+    const el=document.createElement('div');el.style.pointerEvents='none';
+    const sp=document.createElement('span');sp.className='plc '+cls;sp.textContent=name;el.appendChild(sp);
+    new maplibregl.Marker({element:el,anchor:cls==='sea'?'center':'bottom',offset:cls==='sea'?[0,0]:[0,-9]}).setLngLat([lon,lat]).addTo(map);
+  });
   mk('campus','경동대 메트로폴캠퍼스',CAMPUS,()=>fly('metro'));
   P.forEach(p=>{
     const el=pins[p.i]=mk('',p.name,LL[p.name],()=>{if(!el._dragged)select(p.i);el._dragged=false});
@@ -895,6 +918,9 @@ let booted=false;
     const alt=40000/Math.pow(2,z);
     document.getElementById('eAlt').textContent=`카메라 약 ${alt>=10?Math.round(alt).toLocaleString():alt.toFixed(1)}km`;
     box.classList.toggle('zoomed',z>=8.2);
+    box.classList.toggle('z-major',z>=4.4&&z<10.5);
+    box.classList.toggle('z-minor',z>=7.6);
+    box.classList.toggle('z-sea',z>=3.4&&z<8);
   }
   map.on('move',status);status();
   let introDone=false;
